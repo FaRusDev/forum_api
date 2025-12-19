@@ -16,6 +16,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=16.x",
+    "npm": ">=8.x"
+  },
   "dependencies": {
     "@hapi/hapi": "^20.1.5",
     "@hapi/jwt": "^2.0.1",

@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "build": "echo 'No build required'",
+    "start": "node src/app.js"
+  }
+}
