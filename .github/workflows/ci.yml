@@ -59,8 +59,8 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: forumapi_test
-          ACCESS_TOKEN_KEY: ${{ secrets.ACCESS_TOKEN_KEY }}
-          REFRESH_TOKEN_KEY: ${{ secrets.REFRESH_TOKEN_KEY }}
+          ACCESS_TOKEN_KEY: ${{ secrets.ACCESS_TOKEN_KEY || 'test-access-token-key-for-ci-testing-only' }}
+          REFRESH_TOKEN_KEY: ${{ secrets.REFRESH_TOKEN_KEY || 'test-refresh-token-key-for-ci-testing-only' }}
           ACCESS_TOKEN_AGE: 3000
 
       - name: Test coverage
@@ -71,6 +71,6 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: forumapi_test
-          ACCESS_TOKEN_KEY: ${{ secrets.ACCESS_TOKEN_KEY }}
-          REFRESH_TOKEN_KEY: ${{ secrets.REFRESH_TOKEN_KEY }}
+          ACCESS_TOKEN_KEY: ${{ secrets.ACCESS_TOKEN_KEY || 'test-access-token-key-for-ci-testing-only' }}
+          REFRESH_TOKEN_KEY: ${{ secrets.REFRESH_TOKEN_KEY || 'test-refresh-token-key-for-ci-testing-only' }}
           ACCESS_TOKEN_AGE: 3000
