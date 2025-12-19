@@ -1,12 +1,14 @@
 class ToggleLikeUseCase {
-  constructor({ commentRepository, likeRepository }) {
+  constructor({ threadRepository, commentRepository, likeRepository }) {
+    this._threadRepository = threadRepository;
     this._commentRepository = commentRepository;
     this._likeRepository = likeRepository;
   }
 
   async execute(useCasePayload) {
-    const { commentId, owner } = useCasePayload;
+    const { threadId, commentId, owner } = useCasePayload;
 
+    await this._threadRepository.verifyThreadAvailability(threadId);
     await this._commentRepository.verifyCommentAvailability(commentId);
 
     const isLiked = await this._likeRepository.verifyLikeExists(commentId, owner);

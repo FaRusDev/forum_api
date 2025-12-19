@@ -8,11 +8,11 @@ class LikesHandler {
   }
 
   async putLikeHandler(request, h) {
-    const { id: commentId } = request.params;
+    const { threadId, id: commentId } = request.params;
     const { id: owner } = request.auth.credentials;
 
     const toggleLikeUseCase = this._container.getInstance(ToggleLikeUseCase.name);
-    await toggleLikeUseCase.execute({ commentId, owner });
+    await toggleLikeUseCase.execute({ threadId, commentId, owner });
 
     const response = h.response({
       status: 'success',
