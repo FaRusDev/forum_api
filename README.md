@@ -1,6 +1,10 @@
 # Forum API
 
+[![CI/CD](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml/badge.svg)](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml)
+
 Back-End API untuk aplikasi forum diskusi dengan fitur thread, comment, dan reply.
+
+**🌐 Live API:** https://forumapi-production.up.railway.app
 
 ## Tech Stack
 
