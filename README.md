@@ -95,9 +95,22 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 ## CI/CD
 
 Project ini menggunakan GitHub Actions untuk:
-- ✅ Automated testing
+- ✅ Automated testing on every push/PR
 - ✅ Code quality checks
-- ✅ Automated deployment
+- ✅ PostgreSQL integration tests
+- ✅ Test coverage reporting
+- ✅ Automated deployment to Railway.app
+
+**Status:** [![CI/CD](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml/badge.svg)](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml)
+
+## Deployment
+
+**Production URL:** https://forumapi-production.up.railway.app
+
+Deployment platform:
+- **Hosting:** Railway.app
+- **Database:** PostgreSQL (Managed)
+- **Auto-deploy:** From `main` branch
 
 ## License
 
