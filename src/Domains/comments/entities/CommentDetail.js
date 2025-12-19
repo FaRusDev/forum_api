@@ -2,12 +2,13 @@ class CommentDetail {
   constructor(payload) {
     this._verifyPayload(payload)
 
-    const { id, username, date, content, replies } = payload
+    const { id, username, date, content, replies, likeCount } = payload
 
     this.id = id
     this.username = username
     this.date = date
     this.content = content
+    this.likeCount = likeCount !== undefined ? likeCount : 0
     this.replies = replies || []
   }
 

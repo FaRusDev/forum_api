@@ -3,10 +3,11 @@ const CommentDetail = require("../../Domains/comments/entities/CommentDetail")
 const ReplyDetail = require("../../Domains/replies/entities/ReplyDetail")
 
 class GetThreadUseCase {
-  constructor({ threadRepository, commentRepository, replyRepository }) {
+  constructor({ threadRepository, commentRepository, replyRepository, likeRepository }) {
     this._threadRepository = threadRepository
     this._commentRepository = commentRepository
     this._replyRepository = replyRepository
+    this._likeRepository = likeRepository
   }
 
   async execute(useCasePayload) {
@@ -36,6 +37,8 @@ class GetThreadUseCase {
             })
         )
 
+        const likeCount = await this._likeRepository.getLikeCountByCommentId(comment.id)
+
         return new CommentDetail({
           id: comment.id,
           username: comment.username,
@@ -43,6 +46,7 @@ class GetThreadUseCase {
           content: comment.is_deleted
             ? "**komentar telah dihapus**"
             : comment.content,
+          likeCount,
           replies: formattedReplies,
         })
       })
