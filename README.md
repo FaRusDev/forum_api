@@ -146,8 +146,8 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 ### Access Control & Rate Limiting
 - **Configuration:** `nginx.conf`
 - **Rate Limiting:** 
-  - General API: 100 requests/minute per IP
-  - Auth endpoints: 10 requests/minute per IP
+  - `/threads` endpoints: **90 requests/minute per IP**
+  - Other endpoints: No rate limiting
 - **Security Headers:** X-Frame-Options, X-XSS-Protection, CSP
 - **HTTPS Only:** Enforced via Railway SSL
 
