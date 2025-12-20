@@ -1,5 +1,6 @@
 const Hapi = require("@hapi/hapi")
 const Jwt = require("@hapi/jwt")
+const HapiRateLimit = require("hapi-rate-limit")
 const ClientError = require("../../Commons/exceptions/ClientError")
 const DomainErrorTranslator = require("../../Commons/exceptions/DomainErrorTranslator")
 const users = require("../../Interfaces/http/api/users")
@@ -14,6 +15,28 @@ const createServer = async (container) => {
     host: process.env.HOST,
     port: process.env.PORT,
   })
+
+  // Register rate limiting plugin (only in production)
+  if (process.env.NODE_ENV !== 'test') {
+    await server.register({
+      plugin: HapiRateLimit,
+      options: {
+        enabled: true,
+        userLimit: 90, // 90 requests
+        userCache: {
+          expiresIn: 60000, // per 60 seconds (1 minute)
+        },
+        pathLimit: false,
+        userPathLimit: false,
+        headers: true,
+        ipWhitelist: [],
+        trustProxy: true,
+        pathCache: {
+          expiresIn: 60000,
+        },
+      },
+    })
+  }
 
   await server.register([
     {
