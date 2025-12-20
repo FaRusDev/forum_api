@@ -144,10 +144,13 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 ## Security
 
 ### Access Control & Rate Limiting
-- **Configuration:** `nginx.conf`
+- **Implementation:** `hapi-rate-limit` plugin in application code
+- **Configuration:** `src/Infrastructures/http/createServer.js`
 - **Rate Limiting:** 
-  - `/threads` endpoints: **90 requests/minute per IP**
+  - `/threads` endpoints (and all descendants): **90 requests/minute per IP**
   - Other endpoints: No rate limiting
+  - Returns HTTP 429 (Too Many Requests) when limit exceeded
+- **Reference:** `nginx.conf` documents rate limiting strategy
 - **Security Headers:** X-Frame-Options, X-XSS-Protection, CSP
 - **HTTPS Only:** Enforced via Railway SSL
 
