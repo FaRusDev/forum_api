@@ -1,40 +1,29 @@
-# Continuous Deployment Configuration
-# This file documents the CD pipeline for Railway deployment
+name: Continuous Deployment
 
-# Railway automatically deploys from GitHub repository
-# Configuration is managed through Railway dashboard
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-# Deployment Trigger:
-# - Automatic deployment on push to 'main' branch
-# - Can also be triggered manually from Railway dashboard
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-# Deployment Process:
-# 1. Railway detects push to main branch
-# 2. Pulls latest code from GitHub
-# 3. Installs dependencies (npm ci)
-# 4. Runs database migrations (npm run migrate up)
-# 5. Starts application (npm start)
-# 6. Health check verification
-# 7. Traffic routing to new deployment
+      - name: Deploy to Railway
+        run: |
+          echo "Deployment triggered to Railway"
+          echo "Railway will automatically deploy from main branch"
+          echo "Deployment URL: https://forumapi-production.up.railway.app"
 
-# Environment Variables (configured in Railway):
-# - PGHOST (from Railway PostgreSQL)
-# - PGUSER (from Railway PostgreSQL)
-# - PGPASSWORD (from Railway PostgreSQL)
-# - PGDATABASE (from Railway PostgreSQL)
-# - PGPORT (from Railway PostgreSQL)
-# - ACCESS_TOKEN_KEY (from GitHub Secrets)
-# - REFRESH_TOKEN_KEY (from GitHub Secrets)
-# - ACCESS_TOKEN_AGE=3000
+      - name: Wait for deployment
+        run: sleep 30
 
-# Deployment URL:
-# https://forumapi-production.up.railway.app
-
-# Railway Dashboard:
-# https://railway.app/project/{project-id}
-
-# To verify deployment:
-# curl https://forumapi-production.up.railway.app/
-
-# Rollback:
-# Can be performed from Railway dashboard by selecting previous deployment
+      - name: Health Check
+        run: |
+          curl -f https://forumapi-production.up.railway.app/ || exit 1
+          echo "Deployment successful!"
