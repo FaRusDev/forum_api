@@ -1,10 +1,13 @@
 # Forum API
 
 [![CI/CD](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml/badge.svg)](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml)
+[![Deploy to Railway](https://img.shields.io/badge/Deploy-Railway-blueviolet?logo=railway)](https://forumapi-production.up.railway.app)
+[![Production Status](https://img.shields.io/badge/Status-Live-success)](https://forumapi-production.up.railway.app)
 
 Back-End API untuk aplikasi forum diskusi dengan fitur thread, comment, dan reply.
 
 **🌐 Live API:** https://forumapi-production.up.railway.app
+**📊 CI/CD Status:** Auto-deploy from GitHub to Railway
 
 ## Tech Stack
 
@@ -92,25 +95,67 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 3. **Infrastructures** - Implementation (database, security, server)
 4. **Interfaces** - HTTP handlers & routes
 
-## CI/CD
+## CI/CD Pipeline
 
-Project ini menggunakan GitHub Actions untuk:
-- ✅ Automated testing on every push/PR
-- ✅ Code quality checks
-- ✅ PostgreSQL integration tests
-- ✅ Test coverage reporting
-- ✅ Automated deployment to Railway.app
+### Continuous Integration (CI)
+**Platform:** GitHub Actions  
+**Workflow:** `.github/workflows/ci.yml`  
+**Trigger:** Every push/pull request to `main` branch
+
+**CI Process:**
+1. ✅ Setup Node.js environment
+2. ✅ Install dependencies (`npm ci`)
+3. ✅ Setup PostgreSQL test database
+4. ✅ Run database migrations
+5. ✅ Execute 151 automated tests
+6. ✅ Generate test coverage report
 
 **Status:** [![CI/CD](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml/badge.svg)](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml)
 
+### Continuous Deployment (CD)
+**Platform:** Railway.app  
+**Configuration:** `.github/workflows/cd.yml` (documentation)  
+**Trigger:** Automatic on push to `main` branch
+
+**CD Process:**
+1. ✅ Railway detects push to main
+2. ✅ Pull latest code from GitHub
+3. ✅ Install production dependencies
+4. ✅ Run database migrations (`Procfile`)
+5. ✅ Start application
+6. ✅ Health check & traffic routing
+
+**Live URL:** https://forumapi-production.up.railway.app
+
 ## Deployment
 
-**Production URL:** https://forumapi-production.up.railway.app
-
-Deployment platform:
+**Production Environment:**
 - **Hosting:** Railway.app
-- **Database:** PostgreSQL (Managed)
-- **Auto-deploy:** From `main` branch
+- **Database:** PostgreSQL (Railway Managed)
+- **SSL/TLS:** Automatic (Railway provides HTTPS)
+- **Rate Limiting:** nginx.conf configuration
+- **Auto-deploy:** From `main` branch via GitHub integration
+
+**Environment Variables:**
+- Secured in Railway dashboard
+- GitHub Secrets for CI/CD
+- `.env` excluded from repository
+
+## Security
+
+### Access Control & Rate Limiting
+- **Configuration:** `nginx.conf`
+- **Rate Limiting:** 
+  - General API: 100 requests/minute per IP
+  - Auth endpoints: 10 requests/minute per IP
+- **Security Headers:** X-Frame-Options, X-XSS-Protection, CSP
+- **HTTPS Only:** Enforced via Railway SSL
+
+### Authentication & Authorization
+- **JWT-based authentication**
+- Access token & refresh token
+- Protected endpoints require valid Bearer token
+- Users can only delete their own resources
 
 ## License
 

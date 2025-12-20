@@ -1,0 +1,40 @@
+# Continuous Deployment Configuration
+# This file documents the CD pipeline for Railway deployment
+
+# Railway automatically deploys from GitHub repository
+# Configuration is managed through Railway dashboard
+
+# Deployment Trigger:
+# - Automatic deployment on push to 'main' branch
+# - Can also be triggered manually from Railway dashboard
+
+# Deployment Process:
+# 1. Railway detects push to main branch
+# 2. Pulls latest code from GitHub
+# 3. Installs dependencies (npm ci)
+# 4. Runs database migrations (npm run migrate up)
+# 5. Starts application (npm start)
+# 6. Health check verification
+# 7. Traffic routing to new deployment
+
+# Environment Variables (configured in Railway):
+# - PGHOST (from Railway PostgreSQL)
+# - PGUSER (from Railway PostgreSQL)
+# - PGPASSWORD (from Railway PostgreSQL)
+# - PGDATABASE (from Railway PostgreSQL)
+# - PGPORT (from Railway PostgreSQL)
+# - ACCESS_TOKEN_KEY (from GitHub Secrets)
+# - REFRESH_TOKEN_KEY (from GitHub Secrets)
+# - ACCESS_TOKEN_AGE=3000
+
+# Deployment URL:
+# https://forumapi-production.up.railway.app
+
+# Railway Dashboard:
+# https://railway.app/project/{project-id}
+
+# To verify deployment:
+# curl https://forumapi-production.up.railway.app/
+
+# Rollback:
+# Can be performed from Railway dashboard by selecting previous deployment
