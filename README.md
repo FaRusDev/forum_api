@@ -113,19 +113,27 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 **Status:** [![CI/CD](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml/badge.svg)](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml)
 
 ### Continuous Deployment (CD)
-**Platform:** Railway.app  
-**Configuration:** `.github/workflows/cd.yml` (documentation)  
+**Platform:** Railway.app + GitHub Actions  
+**Workflow:** `.github/workflows/cd.yml`  
 **Trigger:** Automatic on push to `main` branch
 
 **CD Process:**
-1. ✅ Railway detects push to main
-2. ✅ Pull latest code from GitHub
+1. ✅ GitHub Actions triggered on push
+2. ✅ Railway detects push and starts deployment
 3. ✅ Install production dependencies
-4. ✅ Run database migrations (`Procfile`)
-5. ✅ Start application
-6. ✅ Health check & traffic routing
+4. ✅ Run database migrations
+5. ✅ Start application server
+6. ✅ Execute health checks (failure & success scenarios)
+7. ✅ Traffic routing to new deployment
+
+**CD Verification:**
+- **Failure Scenario Test:** Tests invalid endpoint (demonstrates error handling)
+- **Success Scenario Test:** Tests valid endpoint (confirms API is responding)
+- **Result:** Both scenarios verified in each deployment
 
 **Live URL:** https://forumapi-production.up.railway.app
+
+**View Workflow Results:** [GitHub Actions CD](https://github.com/FaRusDev/forum_api/actions/workflows/cd.yml)
 
 ## Deployment
 
