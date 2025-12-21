@@ -162,10 +162,11 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 - **Configuration Files:**
   - Application: `src/Infrastructures/http/createServer.js`
   - Route configuration: `src/Interfaces/http/api/threads/routes.js`, `comments/routes.js`, `replies/routes.js`, `likes/routes.js`
-  - Documentation: `nginx.conf` (explains burst and nodelay concepts)
+  - Documentation: `nginx.conf` (strict rate limiting without burst)
   
 - **Rate Limiting Details:**
-  - **Limit:** 90 requests/minute per IP address
+  - **Limit:** STRICT 90 requests/minute per IP address (no burst tolerance)
+  - **Enforcement:** Any request beyond 90/minute immediately rejected with HTTP 429
   - **Scope:** `/threads` endpoint and ALL descendants:
     - `GET /threads/{id}` - Get thread detail
     - `POST /threads` - Create thread
