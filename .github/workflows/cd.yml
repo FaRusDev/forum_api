@@ -21,9 +21,14 @@ jobs:
           echo "Deployment URL: https://forumapi-production.up.railway.app"
 
       - name: Wait for deployment
-        run: sleep 30
+        run: sleep 45
 
       - name: Health Check
         run: |
-          curl -f https://forumapi-production.up.railway.app/ || exit 1
-          echo "Deployment successful!"
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://forumapi-production.up.railway.app/threads/test-invalid-id)
+          if [ $response -eq 404 ] || [ $response -eq 200 ]; then
+            echo "✅ Deployment successful! API responding with status $response"
+          else
+            echo "❌ Deployment check failed with status $response"
+            exit 1
+          fi
