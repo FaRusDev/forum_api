@@ -158,17 +158,18 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 ## Security
 
 ### Access Control & Rate Limiting
-- **Implementation:** `hapi-rate-limit` plugin in application code
+- **Implementation:** Custom in-memory rate limiting middleware in application code
 - **Configuration Files:**
-  - Application: `src/Infrastructures/http/createServer.js`
-  - Route configuration: `src/Interfaces/http/api/threads/routes.js`, `comments/routes.js`, `replies/routes.js`, `likes/routes.js`
-  - Documentation: `nginx.conf` (strict rate limiting without burst)
+  - Application: `src/Infrastructures/http/createServer.js` (server.ext('onRequest') middleware)
+  - Documentation: `nginx.conf` (reference configuration)
   
 - **Rate Limiting Details:**
-  - **Limit:** STRICT 90 requests/minute PER ENDPOINT (path-based)
-  - **Enforcement:** Counts ALL requests to same endpoint, regardless of user/IP
-  - **Behavior:** Any request beyond 90/minute to same path immediately rejected with HTTP 429
-  - **Scope:** `/threads` endpoint and ALL descendants:
+  - **Limit:** STRICT 90 requests/minute PER USER (IP address)
+  - **Scope:** ALL `/threads` endpoints and descendants
+  - **Enforcement:** Tracks all requests to `/threads/*` from same IP
+  - **IP Detection:** Uses `x-forwarded-for` header from Railway proxy
+  - **Behavior:** Request 1-90 pass, Request 91+ immediately rejected with HTTP 429
+  - **Endpoints covered:**
     - `GET /threads/{id}` - Get thread detail
     - `POST /threads` - Create thread
     - `POST /threads/{id}/comments` - Add comment
