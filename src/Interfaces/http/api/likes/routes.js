@@ -5,11 +5,6 @@ const routes = (handler) => [
     handler: handler.putLikeHandler,
     options: {
       auth: 'forumapi_jwt',
-      plugins: {
-        'hapi-rate-limit': {
-          enabled: true,
-        },
-      },
     },
   },
 ];

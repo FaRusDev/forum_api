@@ -16,25 +16,54 @@ const createServer = async (container) => {
     port: process.env.PORT,
   })
 
-  // Register rate limiting plugin (only in production)
-  if (process.env.NODE_ENV !== 'test') {
-    await server.register({
-      plugin: HapiRateLimit,
-      options: {
-        enabled: true,
-        userLimit: 90, // 90 requests per user (IP) per minute across ALL endpoints
-        userCache: {
-          expiresIn: 60000, // per 60 seconds (1 minute)
-        },
-        pathLimit: false,
-        userPathLimit: false,
-        headers: true,
-        ipWhitelist: [],
-        trustProxy: true,
-        getIpFromProxyHeader: 'x-forwarded-for', // Get real IP from Railway proxy
-      },
-    })
-  }
+  // Simple in-memory rate limiting for /threads endpoints
+  const rateLimitStore = new Map();
+  const RATE_LIMIT = 90;
+  const RATE_WINDOW = 60000; // 1 minute
+
+  // Rate limiting middleware
+  server.ext('onRequest', (request, h) => {
+    // Only apply to /threads endpoints
+    if (!request.path.startsWith('/threads')) {
+      return h.continue;
+    }
+
+    // Skip in test environment
+    if (process.env.NODE_ENV === 'test') {
+      return h.continue;
+    }
+
+    const userKey = request.info.remoteAddress || 'unknown';
+    const now = Date.now();
+    
+    if (!rateLimitStore.has(userKey)) {
+      rateLimitStore.set(userKey, { count: 1, resetTime: now + RATE_WINDOW });
+      return h.continue;
+    }
+
+    const userData = rateLimitStore.get(userKey);
+    
+    if (now > userData.resetTime) {
+      // Reset window
+      rateLimitStore.set(userKey, { count: 1, resetTime: now + RATE_WINDOW });
+      return h.continue;
+    }
+
+    if (userData.count >= RATE_LIMIT) {
+      const response = h.response({
+        status: 'fail',
+        message: 'Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints.',
+      }).code(429);
+      response.header('X-RateLimit-Limit', RATE_LIMIT);
+      response.header('X-RateLimit-Remaining', 0);
+      response.header('X-RateLimit-Reset', userData.resetTime);
+      return response.takeover();
+    }
+
+    userData.count += 1;
+    rateLimitStore.set(userKey, userData);
+    return h.continue;
+  });
 
   await server.register([
     {
