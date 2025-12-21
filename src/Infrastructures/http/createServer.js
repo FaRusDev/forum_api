@@ -22,18 +22,15 @@ const createServer = async (container) => {
       plugin: HapiRateLimit,
       options: {
         enabled: true,
-        userLimit: 90, // 90 requests
-        userCache: {
+        userLimit: false, // Disable per-user limit
+        pathLimit: 90, // 90 requests per path (endpoint) per minute
+        pathCache: {
           expiresIn: 60000, // per 60 seconds (1 minute)
         },
-        pathLimit: false,
         userPathLimit: false,
         headers: true,
         ipWhitelist: [],
         trustProxy: true,
-        pathCache: {
-          expiresIn: 60000,
-        },
       },
     })
   }

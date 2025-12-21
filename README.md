@@ -165,8 +165,9 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
   - Documentation: `nginx.conf` (strict rate limiting without burst)
   
 - **Rate Limiting Details:**
-  - **Limit:** STRICT 90 requests/minute per IP address (no burst tolerance)
-  - **Enforcement:** Any request beyond 90/minute immediately rejected with HTTP 429
+  - **Limit:** STRICT 90 requests/minute PER ENDPOINT (path-based)
+  - **Enforcement:** Counts ALL requests to same endpoint, regardless of user/IP
+  - **Behavior:** Any request beyond 90/minute to same path immediately rejected with HTTP 429
   - **Scope:** `/threads` endpoint and ALL descendants:
     - `GET /threads/{id}` - Get thread detail
     - `POST /threads` - Create thread
