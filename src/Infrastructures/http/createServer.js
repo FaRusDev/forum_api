@@ -33,7 +33,10 @@ const createServer = async (container) => {
       return h.continue;
     }
 
-    const userKey = request.info.remoteAddress || 'unknown';
+    // Get IP from Railway proxy headers or remoteAddress
+    const userKey = request.headers['x-forwarded-for']?.split(',')[0]?.trim() 
+                    || request.info.remoteAddress 
+                    || 'unknown';
     const now = Date.now();
     
     if (!rateLimitStore.has(userKey)) {
