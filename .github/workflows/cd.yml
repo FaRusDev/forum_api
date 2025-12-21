@@ -23,12 +23,36 @@ jobs:
       - name: Wait for deployment
         run: sleep 45
 
-      - name: Health Check
+      - name: Health Check - Invalid Endpoint (Expected to Fail)
+        continue-on-error: true
+        id: test_fail
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://forumapi-production.up.railway.app/threads/test-invalid-id)
+          echo "Testing with invalid endpoint (should fail)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://forumapi-production.up.railway.app/invalid-endpoint-for-testing)
+          if [ $response -eq 200 ]; then
+            echo "✅ Unexpected success"
+            exit 0
+          else
+            echo "❌ Expected failure with status $response (This is OK - demonstrating failure scenario)"
+            exit 1
+          fi
+
+      - name: Health Check - Valid Endpoint (Expected to Succeed)
+        id: test_success
+        run: |
+          echo "Testing with valid endpoint (should succeed)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://forumapi-production.up.railway.app/threads/test-id)
           if [ $response -eq 404 ] || [ $response -eq 200 ]; then
             echo "✅ Deployment successful! API responding with status $response"
+            exit 0
           else
             echo "❌ Deployment check failed with status $response"
             exit 1
           fi
+
+      - name: Summary
+        run: |
+          echo "📊 CD Test Results:"
+          echo "   - Failure Scenario: Demonstrated (invalid endpoint test)"
+          echo "   - Success Scenario: Verified (valid endpoint test)"
+          echo "   - Overall Status: ✅ PASSED"
