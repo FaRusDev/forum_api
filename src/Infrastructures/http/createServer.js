@@ -22,15 +22,16 @@ const createServer = async (container) => {
       plugin: HapiRateLimit,
       options: {
         enabled: true,
-        userLimit: false, // Disable per-user limit
-        pathLimit: 90, // 90 requests per path (endpoint) per minute
-        pathCache: {
+        userLimit: 90, // 90 requests per user (IP) per minute across ALL endpoints
+        userCache: {
           expiresIn: 60000, // per 60 seconds (1 minute)
         },
+        pathLimit: false,
         userPathLimit: false,
         headers: true,
         ipWhitelist: [],
         trustProxy: true,
+        getIpFromProxyHeader: 'x-forwarded-for', // Get real IP from Railway proxy
       },
     })
   }
