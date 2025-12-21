@@ -107,8 +107,14 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 2. ✅ Install dependencies (`npm ci`)
 3. ✅ Setup PostgreSQL test database
 4. ✅ Run database migrations
-5. ✅ Execute 151 automated tests
+5. ✅ Execute 161 automated tests (52 test suites)
 6. ✅ Generate test coverage report
+
+**Test Coverage:**
+- **Total Tests:** 161 passing
+- **Test Suites:** 52 passing
+- **Coverage:** All layers (Domains, Applications, Infrastructures, Interfaces)
+- **Includes:** Likes feature (ToggleLikeUseCase, LikeRepository, LikeRepositoryPostgres, CommentDetail with likeCount)
 
 **Status:** [![CI/CD](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml/badge.svg)](https://github.com/FaRusDev/forum_api/actions/workflows/ci.yml)
 
