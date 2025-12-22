@@ -46,18 +46,24 @@ const createServer = async (container) => {
 
     // Check global limit
     if (globalRateLimit.count >= RATE_LIMIT) {
+      console.log(`⚠️ RATE LIMIT TRIGGERED: Request ${globalRateLimit.count + 1} blocked at ${new Date().toISOString()}`);
       const response = h.response({
         status: 'fail',
-        message: 'Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints (global limit).',
+        message: 'Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints.',
       }).code(429);
       response.header('X-RateLimit-Limit', RATE_LIMIT);
       response.header('X-RateLimit-Remaining', 0);
-      response.header('X-RateLimit-Reset', globalRateLimit.resetTime);
+      response.header('X-RateLimit-Reset', new Date(globalRateLimit.resetTime).toISOString());
+      response.header('Retry-After', Math.ceil((globalRateLimit.resetTime - now) / 1000));
       return response.takeover();
     }
 
     // Increment global counter
     globalRateLimit.count += 1;
+    
+    // Add rate limit headers to successful responses too
+    request.app.rateLimitRemaining = RATE_LIMIT - globalRateLimit.count;
+    
     return h.continue;
   });
 
@@ -113,6 +119,14 @@ const createServer = async (container) => {
   server.ext("onPreResponse", (request, h) => {
     // mendapatkan konteks response dari request
     const { response } = request
+
+    // Add rate limit headers to successful /threads responses
+    if (request.path.startsWith('/threads') && 
+        request.app.rateLimitRemaining !== undefined &&
+        !(response instanceof Error)) {
+      response.header('X-RateLimit-Limit', RATE_LIMIT);
+      response.header('X-RateLimit-Remaining', request.app.rateLimitRemaining);
+    }
 
     if (response instanceof Error) {
       // bila response tersebut error, tangani sesuai kebutuhan
