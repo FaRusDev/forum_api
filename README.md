@@ -190,6 +190,56 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 
 ## Testing Rate Limiting
 
+### For Reviewers: How to Test Rate Limiting with Postman
+
+**⚠️ IMPORTANT:** Rate limiting is GLOBAL (not per-IP). This means:
+- The 90 requests/minute limit applies to **ALL requests** from **ALL sources** combined
+- If multiple users/IPs test simultaneously, they share the same limit
+- Request 91+ from ANY source will receive HTTP 429 (Too Many Requests)
+
+**Testing Instructions:**
+
+1. **Single Source Test (Recommended):**
+   - Open Postman Collection: `Forum API V1 Test.postman_collection.json`
+   - Run Collection Runner WITHOUT delays
+   - Monitor responses - you should see:
+     - First 90 requests: Success (200, 201, 404, etc.)
+     - Request 91+: HTTP 429 (Too Many Requests)
+
+2. **Automated Test Script:**
+   ```bash
+   node test-rate-limit.js
+   ```
+   Expected output: 90 successful, 10 blocked (HTTP 429)
+
+3. **Manual Verification:**
+   - Rapidly send 100 GET requests to: `https://forumapi-production.up.railway.app/threads`
+   - Use Postman Runner or curl in loop
+   - Response headers will show:
+     - `X-RateLimit-Limit: 90`
+     - `X-RateLimit-Remaining: <count>`
+     - `Retry-After: <seconds>` (when rate limited)
+
+**Why HTTP 429 (not 503)?**
+- HTTP 429 = "Too Many Requests" (correct status for rate limiting)
+- HTTP 503 = "Service Unavailable" (server/Railway issues)
+- Our implementation returns 429 as per RFC 6585 standard
+
+**Response Format When Rate Limited:**
+```json
+{
+  "status": "fail",
+  "message": "Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints."
+}
+```
+
+**Debugging Rate Limiting:**
+- Check Railway logs for: `⚠️ RATE LIMIT TRIGGERED` messages
+- Headers in response show remaining quota
+- Rate limit resets every 60 seconds
+
+### Automated Test Script
+
 To verify rate limiting works in production:
 ```bash
 node test-rate-limit.js
