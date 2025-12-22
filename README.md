@@ -158,24 +158,23 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 ## Security
 
 ### Access Control & Rate Limiting
-- **Implementation:** Custom in-memory rate limiting middleware in application code
-- **Configuration Files:**
-  - Application: `src/Infrastructures/http/createServer.js` (server.ext('onRequest') middleware)
-  - Documentation: `nginx.conf` (reference configuration)
+- **Implementation:** Custom GLOBAL rate limiting middleware
+- **Configuration:** `src/Infrastructures/http/createServer.js` (server.ext('onRequest'))
   
 - **Rate Limiting Details:**
-  - **Limit:** STRICT 90 requests/minute PER USER (IP address)
-  - **Scope:** ALL `/threads` endpoints and descendants
-  - **Enforcement:** Tracks all requests to `/threads/*` from same IP
-  - **IP Detection:** Uses `x-forwarded-for` header from Railway proxy
-  - **Behavior:** Request 1-90 pass, Request 91+ immediately rejected with HTTP 429
-  - **Endpoints covered:**
+  - **Type:** GLOBAL rate limiting (shared across all users/IPs)
+  - **Limit:** STRICT 90 requests/minute TOTAL to ALL `/threads` endpoints
+  - **Enforcement:** Counts ALL requests to `/threads/*` from ANY source
+  - **Behavior:** First 90 requests pass, Request 91+ immediately rejected with HTTP 429
+  - **Window:** 60 seconds rolling window
+  - **Scope:** ALL `/threads` endpoints and descendants:
     - `GET /threads/{id}` - Get thread detail
-    - `POST /threads` - Create thread
+    - `POST /threads` - Create thread  
     - `POST /threads/{id}/comments` - Add comment
     - `DELETE /threads/{id}/comments/{id}` - Delete comment
     - `POST /threads/{id}/comments/{id}/replies` - Add reply
     - `DELETE /threads/{id}/comments/{id}/replies/{id}` - Delete reply
+    - `PUT /threads/{id}/comments/{id}/likes` - Like/unlike comment
     - `PUT /threads/{id}/comments/{id}/likes` - Like/unlike comment
   - **Behavior:** Returns HTTP 429 (Too Many Requests) when exceeded
   - **Test:** Run `node test-rate-limit.js` to verify (100 requests → 90 pass, 10 blocked)
