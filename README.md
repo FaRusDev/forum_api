@@ -192,17 +192,34 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 
 ### For Reviewers: How to Test Rate Limiting with Postman
 
-**⚠️ IMPORTANT:** Rate limiting is GLOBAL (not per-IP). This means:
-- The 90 requests/minute limit applies to **ALL requests** from **ALL sources** combined
-- If multiple users/IPs test simultaneously, they share the same limit
-- Request 91+ from ANY source will receive HTTP 429 (Too Many Requests)
+**⚠️ IMPORTANT SETUP:**
+1. **Use Forum API V2 Collection** (includes optional Likes feature)
+2. **Use Railway Production Environment** (NOT localhost)
+3. Rate limiting is GLOBAL (not per-IP) - applies to ALL requests from ALL sources combined
 
-**Testing Instructions:**
+**Step-by-Step Testing:**
 
-1. **Single Source Test (Recommended):**
-   - Open Postman Collection: `Forum API V1 Test.postman_collection.json`
-   - Run Collection Runner WITHOUT delays
-   - Monitor responses - you should see:
+1. **Import Files into Postman:**
+   - Collection: `Forum API V2 Test.postman_collection.json`
+   - Environment: `Forum API V2 Test - Railway Production.postman_environment.json`
+
+2. **Select Production Environment:**
+   - In Postman, select environment: "Forum API V2 Test - Railway Production"
+   - Verify variables:
+     - `host`: forumapi-production.up.railway.app
+     - `protocol`: https
+     - `port`: (empty)
+
+3. **Run Collection WITHOUT Delays:**
+   - Open Collection Runner
+   - Select: "Forum API V2 Test" collection
+   - Environment: "Forum API V2 Test - Railway Production"
+   - **DISABLE** "Delay between requests" (set to 0ms)
+   - Click "Run"
+
+4. **Expected Results:**
+   - Total requests in V2 collection: 68 requests
+   - If you run collection 2 times rapidly (136 requests total):
      - First 90 requests: Success (200, 201, 404, etc.)
      - Request 91+: HTTP 429 (Too Many Requests)
 

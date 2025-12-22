@@ -62,12 +62,52 @@ Result: ✅ SUCCESS
 
 ## Verification Steps for Reviewers
 
-### Using Postman Collection
-1. Import: `Forum API V1 Test.postman_collection.json`
-2. Run Collection Runner WITHOUT delays between requests
-3. Expected Results:
-   - First 90 requests: Success (200, 201, 404, 401, etc.)
-   - Request 91+: HTTP 429 (Too Many Requests)
+### IMPORTANT: Use Correct Collection and Environment
+
+**❌ WRONG Setup (Will Not Show Rate Limiting):**
+- Using localhost environment
+- Testing on local development server
+- Using Forum API V1 (old version)
+
+**✅ CORRECT Setup:**
+- **Collection:** Forum API V2 Test.postman_collection.json (68 requests, includes Likes)
+- **Environment:** Forum API V2 Test - Railway Production.postman_environment.json
+- **Target:** https://forumapi-production.up.railway.app
+
+### Using Postman Collection (RECOMMENDED)
+
+**Step 1: Import Files**
+1. Open Postman
+2. Import Collection: `Forum API V2 Test.postman_collection.json`
+3. Import Environment: `Forum API V2 Test - Railway Production.postman_environment.json`
+
+**Step 2: Select Production Environment**
+1. In Postman top-right, select environment: "Forum API V2 Test - Railway Production"
+2. Click eye icon to verify variables:
+   ```
+   host: forumapi-production.up.railway.app
+   protocol: https
+   port: (leave empty)
+   ```
+
+**Step 3: Run Collection**
+1. Click on "Forum API V2 Test" collection
+2. Click "Run" button (Collection Runner)
+3. Settings:
+   - Iterations: 2 (to get 136 total requests)
+   - Delay: 0ms (NO delay between requests)
+   - Data: None
+4. Click "Run Forum API V2 Test"
+
+**Step 4: Observe Results**
+Expected behavior:
+- Iteration 1: All 68 requests succeed (total: 68)
+- Iteration 2: First 22 requests succeed, then HTTP 429 errors start
+- Total: 90 success, 46 rate limited (429)
+
+**Why 2 Iterations?**
+- Single iteration = 68 requests (below 90 limit, won't trigger)
+- Two iterations = 136 requests (will trigger after 90th request)
 
 ### Using curl (Command Line)
 ```bash
