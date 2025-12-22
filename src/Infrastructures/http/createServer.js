@@ -16,12 +16,15 @@ const createServer = async (container) => {
     port: process.env.PORT,
   })
 
-  // Simple in-memory rate limiting for /threads endpoints
-  const rateLimitStore = new Map();
+  // Global rate limiting for /threads endpoints
+  const globalRateLimit = {
+    count: 0,
+    resetTime: Date.now() + 60000,
+  };
   const RATE_LIMIT = 90;
   const RATE_WINDOW = 60000; // 1 minute
 
-  // Rate limiting middleware
+  // Rate limiting middleware - GLOBAL (not per-IP)
   server.ext('onRequest', (request, h) => {
     // Only apply to /threads endpoints
     if (!request.path.startsWith('/threads')) {
@@ -33,38 +36,28 @@ const createServer = async (container) => {
       return h.continue;
     }
 
-    // Get IP from Railway proxy headers or remoteAddress
-    const userKey = request.headers['x-forwarded-for']?.split(',')[0]?.trim() 
-                    || request.info.remoteAddress 
-                    || 'unknown';
     const now = Date.now();
     
-    if (!rateLimitStore.has(userKey)) {
-      rateLimitStore.set(userKey, { count: 1, resetTime: now + RATE_WINDOW });
-      return h.continue;
+    // Reset window if expired
+    if (now > globalRateLimit.resetTime) {
+      globalRateLimit.count = 0;
+      globalRateLimit.resetTime = now + RATE_WINDOW;
     }
 
-    const userData = rateLimitStore.get(userKey);
-    
-    if (now > userData.resetTime) {
-      // Reset window
-      rateLimitStore.set(userKey, { count: 1, resetTime: now + RATE_WINDOW });
-      return h.continue;
-    }
-
-    if (userData.count >= RATE_LIMIT) {
+    // Check global limit
+    if (globalRateLimit.count >= RATE_LIMIT) {
       const response = h.response({
         status: 'fail',
-        message: 'Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints.',
+        message: 'Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints (global limit).',
       }).code(429);
       response.header('X-RateLimit-Limit', RATE_LIMIT);
       response.header('X-RateLimit-Remaining', 0);
-      response.header('X-RateLimit-Reset', userData.resetTime);
+      response.header('X-RateLimit-Reset', globalRateLimit.resetTime);
       return response.takeover();
     }
 
-    userData.count += 1;
-    rateLimitStore.set(userKey, userData);
+    // Increment global counter
+    globalRateLimit.count += 1;
     return h.continue;
   });
 
