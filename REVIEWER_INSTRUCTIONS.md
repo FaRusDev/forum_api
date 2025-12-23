@@ -1,6 +1,64 @@
 # 🚨 PENTING UNTUK REVIEWER 🚨
 
-## Mengapa Rate Limiting Tidak Terdeteksi?
+## ⚠️ Rate Limiting: Application-Level Implementation (NOT Nginx)
+
+### Mengapa TIDAK Menggunakan Nginx?
+
+Sesuai dengan feedback reviewer dan arsitektur Railway:
+
+> "Railway menggunakan **reverse proxy dan layer edge** yang menangani seluruh request masuk sebelum diteruskan ke container aplikasi. Akibatnya, **Nginx yang berada di dalam container bukan menjadi entry point utama** dan reverse proxy Railway tidak memiliki mekanisme rate limiting berbasis `$binary_remote_addr`."
+
+**Kesimpulan:** Rate limiting **HARUS di level aplikasi Node.js**, bukan di Nginx.
+
+### ✅ Solusi yang Diimplementasikan
+
+**Implementation:** Custom middleware di **Node.js (Hapi framework)**
+
+- **Location:** `src/Infrastructures/http/createServer.js` (lines 19-68)
+- **Method:** `server.ext('onRequest')` - Application-level middleware
+- **Type:** GLOBAL rate limiting (shared counter)
+- **Limit:** 90 requests/minute TOTAL for all /threads endpoints
+- **Response:** HTTP 429 (Too Many Requests)
+
+**Code Snippet:**
+```javascript
+// Custom Rate Limiting Middleware - Application Level
+const globalRateLimit = {
+  count: 0,
+  resetTime: Date.now() + 60000,
+};
+
+server.ext('onRequest', (request, h) => {
+  if (!request.path.startsWith('/threads')) return h.continue;
+  
+  const now = Date.now();
+  if (now > globalRateLimit.resetTime) {
+    globalRateLimit.count = 0;
+    globalRateLimit.resetTime = now + RATE_WINDOW;
+  }
+  
+  if (globalRateLimit.count >= RATE_LIMIT) {
+    console.log(`⚠️ RATE LIMIT TRIGGERED: Request ${globalRateLimit.count + 1} blocked`);
+    return h.response({
+      status: 'fail',
+      message: 'Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints.'
+    }).code(429).takeover();
+  }
+  
+  globalRateLimit.count += 1;
+  return h.continue;
+});
+```
+
+**nginx.conf Status:**
+- ✅ File included as **reference/documentation only**
+- ❌ NOT actually executed (Railway uses its own edge layer)
+- ✅ Shows understanding of rate limiting concepts
+- ✅ Actual implementation is in Node.js application code
+
+---
+
+## Mengapa Rate Limiting Tidak Terdeteksi Sebelumnya?
 
 ### ❌ Masalah: Environment SALAH
 

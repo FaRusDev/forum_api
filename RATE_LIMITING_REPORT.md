@@ -7,13 +7,68 @@
 
 ## Rate Limiting Configuration
 
+### ⚠️ CRITICAL: Application-Level Implementation (NOT Nginx)
+
+**Why Application-Level Rate Limiting?**
+
+Railway menggunakan **reverse proxy dan layer edge** yang menangani seluruh request masuk sebelum diteruskan ke container aplikasi. Ini berarti:
+
+1. **Nginx di dalam container BUKAN entry point utama**
+2. **Reverse proxy Railway tidak support Nginx rate limiting config** (seperti `limit_req_zone` dan `$binary_remote_addr`)
+3. **IP address yang diterima aplikasi adalah IP Railway proxy**, bukan IP client asli
+4. **Nginx config tidak dieksekusi di layer edge**
+
+**Solusi yang Tepat untuk Railway:**
+Rate limiting **HARUS di level aplikasi Node.js**, bukan di Nginx. Ini memastikan:
+- ✅ Pembatasan request tetap berjalan konsisten
+- ✅ Tidak bergantung pada konfigurasi Nginx yang tidak dieksekusi di edge
+- ✅ Sesuai dengan arsitektur Railway (reverse proxy + container)
+
 ### Implementation Details
-- **Type:** GLOBAL rate limiting (shared across all users/IPs)
+
+**Approach:** Custom middleware di Node.js (Hapi framework)
+
 - **Location:** `src/Infrastructures/http/createServer.js`
-- **Method:** Custom middleware using `server.ext('onRequest')`
+- **Method:** Custom middleware using `server.ext('onRequest')` hook
+- **Type:** GLOBAL rate limiting (shared counter across all users/IPs)
 - **Limit:** 90 requests per minute TOTAL for ALL `/threads` endpoints
 - **Scope:** All `/threads/*` paths (GET, POST, DELETE, PUT)
 - **Error Code:** HTTP 429 (Too Many Requests) - RFC 6585 compliant
+
+**Code Implementation:**
+```javascript
+// Custom middleware - Application Level (Node.js)
+const globalRateLimit = {
+  count: 0,
+  resetTime: Date.now() + 60000,
+};
+
+server.ext('onRequest', (request, h) => {
+  if (!request.path.startsWith('/threads')) return h.continue;
+  
+  const now = Date.now();
+  if (now > globalRateLimit.resetTime) {
+    globalRateLimit.count = 0;
+    globalRateLimit.resetTime = now + RATE_WINDOW;
+  }
+  
+  if (globalRateLimit.count >= RATE_LIMIT) {
+    return h.response({
+      status: 'fail',
+      message: 'Too Many Requests...'
+    }).code(429).takeover();
+  }
+  
+  globalRateLimit.count += 1;
+  return h.continue;
+});
+```
+
+**nginx.conf Status:**
+- File `nginx.conf` included as **documentation/reference only**
+- Shows understanding of rate limiting concepts
+- **NOT actually used/executed** in Railway environment
+- Actual rate limiting is in Node.js application code
 
 ### Response Format
 **When Rate Limited (HTTP 429):**

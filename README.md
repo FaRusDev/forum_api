@@ -158,10 +158,26 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
 ## Security
 
 ### Access Control & Rate Limiting
-- **Implementation:** Custom GLOBAL rate limiting middleware
-- **Configuration:** `src/Infrastructures/http/createServer.js` (server.ext('onRequest'))
-  
-- **Rate Limiting Details:**
+
+**⚠️ IMPORTANT: Rate Limiting Implementation for Railway**
+
+Railway menggunakan **reverse proxy dan layer edge** yang menangani request sebelum masuk ke container aplikasi. Oleh karena itu, **rate limiting TIDAK diimplementasikan di Nginx** (karena Nginx di container bukan entry point), melainkan di **level aplikasi Node.js** menggunakan custom middleware.
+
+**Implementation Details:**
+- **Location:** `src/Infrastructures/http/createServer.js`
+- **Method:** Custom middleware menggunakan Hapi `server.ext('onRequest')`
+- **Reason:** Sesuai arsitektur Railway, rate limiting harus di application level agar konsisten
+- **Type:** GLOBAL rate limiting (shared counter across all requests)
+- **Limit:** 90 requests per minute TOTAL for all /threads endpoints
+- **Response:** HTTP 429 (Too Many Requests) when exceeded
+
+**Why Application-Level Rate Limiting?**
+1. Railway uses reverse proxy - Nginx in container is NOT the entry point
+2. Edge layer handles requests before reaching application
+3. Application-level ensures consistent enforcement
+4. Works with Railway's infrastructure (no dependency on Nginx config)
+
+**Rate Limiting Configuration:**
   - **Type:** GLOBAL rate limiting (shared across all users/IPs)
   - **Limit:** STRICT 90 requests/minute TOTAL to ALL `/threads` endpoints
   - **Enforcement:** Counts ALL requests to `/threads/*` from ANY source
@@ -175,12 +191,13 @@ Project menggunakan **Clean Architecture** dengan 4 layers:
     - `POST /threads/{id}/comments/{id}/replies` - Add reply
     - `DELETE /threads/{id}/comments/{id}/replies/{id}` - Delete reply
     - `PUT /threads/{id}/comments/{id}/likes` - Like/unlike comment
-    - `PUT /threads/{id}/comments/{id}/likes` - Like/unlike comment
-  - **Behavior:** Returns HTTP 429 (Too Many Requests) when exceeded
+  - **Headers:** X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After
   - **Test:** Run `node test-rate-limit.js` to verify (100 requests → 90 pass, 10 blocked)
 
-- **Security Headers:** X-Frame-Options, X-XSS-Protection, CSP
-- **HTTPS Only:** Enforced via Railway SSL
+**nginx.conf Status:**
+- File `nginx.conf` included as **reference/documentation only**
+- NOT executed in Railway environment (Railway uses its own edge layer)
+- Rate limiting actually implemented in Node.js application code
 
 ### Authentication & Authorization
 - **JWT-based authentication**

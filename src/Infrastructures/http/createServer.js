@@ -1,6 +1,5 @@
 const Hapi = require("@hapi/hapi")
 const Jwt = require("@hapi/jwt")
-const HapiRateLimit = require("hapi-rate-limit")
 const ClientError = require("../../Commons/exceptions/ClientError")
 const DomainErrorTranslator = require("../../Commons/exceptions/DomainErrorTranslator")
 const users = require("../../Interfaces/http/api/users")
@@ -16,7 +15,19 @@ const createServer = async (container) => {
     port: process.env.PORT,
   })
 
-  // Global rate limiting for /threads endpoints
+  /**
+   * RATE LIMITING - APPLICATION LEVEL (Node.js Middleware)
+   * 
+   * Implementation: Custom middleware using Hapi server.ext('onRequest')
+   * Reason: Railway uses reverse proxy and edge layer, so Nginx-based rate limiting
+   *         cannot be executed effectively. Application-level rate limiting ensures
+   *         consistent enforcement regardless of infrastructure.
+   * 
+   * Type: GLOBAL rate limiting (shared counter across all requests)
+   * Limit: 90 requests per minute TOTAL for all /threads endpoints
+   * Scope: All /threads/* paths (GET, POST, DELETE, PUT)
+   * Response: HTTP 429 (Too Many Requests) when limit exceeded
+   */
   const globalRateLimit = {
     count: 0,
     resetTime: Date.now() + 60000,
@@ -24,7 +35,7 @@ const createServer = async (container) => {
   const RATE_LIMIT = 90;
   const RATE_WINDOW = 60000; // 1 minute
 
-  // Rate limiting middleware - GLOBAL (not per-IP)
+  // Rate limiting middleware - Application level (Node.js)
   server.ext('onRequest', (request, h) => {
     // Only apply to /threads endpoints
     if (!request.path.startsWith('/threads')) {
