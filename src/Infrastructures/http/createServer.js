@@ -1,5 +1,6 @@
 const Hapi = require("@hapi/hapi")
 const Jwt = require("@hapi/jwt")
+const HapiRateLimit = require("hapi-rate-limit")
 const ClientError = require("../../Commons/exceptions/ClientError")
 const DomainErrorTranslator = require("../../Commons/exceptions/DomainErrorTranslator")
 const users = require("../../Interfaces/http/api/users")
@@ -16,67 +17,59 @@ const createServer = async (container) => {
   })
 
   /**
-   * RATE LIMITING - APPLICATION LEVEL (Node.js Middleware)
+   * RATE LIMITING - APPLICATION LEVEL (Node.js Plugin)
    * 
-   * Implementation: Custom middleware using Hapi server.ext('onRequest')
+   * Implementation: hapi-rate-limit plugin (application-level rate limiting)
    * Reason: Railway uses reverse proxy and edge layer, so Nginx-based rate limiting
-   *         cannot be executed effectively. Application-level rate limiting ensures
-   *         consistent enforcement regardless of infrastructure.
+   *         cannot be executed effectively. Application-level rate limiting using
+   *         middleware/plugin ensures consistent enforcement regardless of infrastructure.
    * 
-   * Type: GLOBAL rate limiting (shared counter across all requests)
-   * Limit: 90 requests per minute TOTAL for all /threads endpoints
-   * Scope: All /threads/* paths (GET, POST, DELETE, PUT)
-   * Response: HTTP 429 (Too Many Requests) when limit exceeded
+   * Reference: Reviewer feedback suggests using middleware like express-rate-limit
+   *            for Node.js. For Hapi framework, we use hapi-rate-limit plugin.
+   * 
+   * Configuration:
+   * - Type: GLOBAL rate limiting via pathLimit (shared across all /threads paths)
+   * - Limit: 90 requests per minute for ALL /threads endpoints combined
+   * - Scope: All /threads/* paths (GET, POST, DELETE, PUT)
+   * - Response: HTTP 429 (Too Many Requests) when limit exceeded
+   * - Headers: X-RateLimit-* headers automatically added by plugin
    */
-  const globalRateLimit = {
-    count: 0,
-    resetTime: Date.now() + 60000,
-  };
-  const RATE_LIMIT = 90;
-  const RATE_WINDOW = 60000; // 1 minute
 
-  // Rate limiting middleware - Application level (Node.js)
-  server.ext('onRequest', (request, h) => {
-    // Only apply to /threads endpoints
-    if (!request.path.startsWith('/threads')) {
+  // Register rate limiting plugin - Application level (Node.js)
+  if (process.env.NODE_ENV !== 'test') {
+    await server.register({
+      plugin: HapiRateLimit,
+      options: {
+        enabled: true,
+        pathLimit: 90, // 90 requests per minute for /threads paths
+        pathCache: {
+          expiresIn: 60000, // 1 minute window
+        },
+        userLimit: false, // Disable per-user limit (we want global limit)
+        userCache: false,
+        headers: true, // Add X-RateLimit-* headers
+        ipWhitelist: [],
+        trustProxy: true, // Trust proxy headers (important for Railway)
+        getIpFromProxyHeader: (header) => {
+          // Railway uses x-forwarded-for header
+          if (header) {
+            const ips = header.split(',');
+            return ips[0].trim();
+          }
+          return null;
+        },
+      },
+    });
+
+    // Apply rate limiting only to /threads endpoints
+    server.ext('onRequest', (request, h) => {
+      if (!request.path.startsWith('/threads')) {
+        // Skip rate limiting for non-/threads endpoints
+        request.plugins['hapi-rate-limit'] = { skip: true };
+      }
       return h.continue;
-    }
-
-    // Skip in test environment
-    if (process.env.NODE_ENV === 'test') {
-      return h.continue;
-    }
-
-    const now = Date.now();
-    
-    // Reset window if expired
-    if (now > globalRateLimit.resetTime) {
-      globalRateLimit.count = 0;
-      globalRateLimit.resetTime = now + RATE_WINDOW;
-    }
-
-    // Check global limit
-    if (globalRateLimit.count >= RATE_LIMIT) {
-      console.log(`⚠️ RATE LIMIT TRIGGERED: Request ${globalRateLimit.count + 1} blocked at ${new Date().toISOString()}`);
-      const response = h.response({
-        status: 'fail',
-        message: 'Too Many Requests. Rate limit: 90 requests per minute for /threads endpoints.',
-      }).code(429);
-      response.header('X-RateLimit-Limit', RATE_LIMIT);
-      response.header('X-RateLimit-Remaining', 0);
-      response.header('X-RateLimit-Reset', new Date(globalRateLimit.resetTime).toISOString());
-      response.header('Retry-After', Math.ceil((globalRateLimit.resetTime - now) / 1000));
-      return response.takeover();
-    }
-
-    // Increment global counter
-    globalRateLimit.count += 1;
-    
-    // Add rate limit headers to successful responses too
-    request.app.rateLimitRemaining = RATE_LIMIT - globalRateLimit.count;
-    
-    return h.continue;
-  });
+    });
+  }
 
   await server.register([
     {
@@ -130,14 +123,6 @@ const createServer = async (container) => {
   server.ext("onPreResponse", (request, h) => {
     // mendapatkan konteks response dari request
     const { response } = request
-
-    // Add rate limit headers to successful /threads responses
-    if (request.path.startsWith('/threads') && 
-        request.app.rateLimitRemaining !== undefined &&
-        !(response instanceof Error)) {
-      response.header('X-RateLimit-Limit', RATE_LIMIT);
-      response.header('X-RateLimit-Remaining', request.app.rateLimitRemaining);
-    }
 
     if (response instanceof Error) {
       // bila response tersebut error, tangani sesuai kebutuhan
