@@ -14,21 +14,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy to Railway
+      - name: Deploy to AWS EC2
         run: |
-          echo "Deployment triggered to Railway"
-          echo "Railway will automatically deploy from main branch"
-          echo "Deployment URL: https://forumapi-production.up.railway.app"
+          echo "🚀 Deployment to AWS EC2"
+          echo "Instance: forum-api-server (t2.micro)"
+          echo "Region: ap-southeast-1 (Singapore)"
+          echo "Deployment URL: http://18.142.114.158"
+          echo ""
+          echo "📝 Deployment is managed via PM2 on EC2 instance"
+          echo "To deploy updates manually:"
+          echo "  1. SSH to EC2: ssh -i forum-api-key.pem ubuntu@18.142.114.158"
+          echo "  2. Pull latest: cd forum_api && git pull origin main"
+          echo "  3. Install deps: npm install"
+          echo "  4. Run migrations: npm run migrate up"
+          echo "  5. Restart app: pm2 restart forum-api"
 
-      - name: Wait for deployment
-        run: sleep 45
+      - name: Wait for server ready
+        run: sleep 10
 
       - name: Health Check - Invalid Endpoint (Expected to Fail)
         continue-on-error: true
         id: test_fail
         run: |
           echo "Testing with invalid endpoint (should fail)..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://forumapi-production.up.railway.app/invalid-endpoint-for-testing)
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://18.142.114.158/invalid-endpoint-for-testing)
           if [ $response -eq 200 ]; then
             echo "✅ Unexpected success"
             exit 0
@@ -41,7 +50,7 @@ jobs:
         id: test_success
         run: |
           echo "Testing with valid endpoint (should succeed)..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://forumapi-production.up.railway.app/threads/test-id)
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://18.142.114.158/threads/test-id)
           if [ $response -eq 404 ] || [ $response -eq 200 ]; then
             echo "✅ Deployment successful! API responding with status $response"
             exit 0
